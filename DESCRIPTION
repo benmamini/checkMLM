@@ -1,0 +1,18 @@
+Package: checkmlm
+Type: Package
+Title: Diagnostic Utilities for Empty Multilevel Models
+Version: 0.1.0
+Authors@R: 
+    person("Ben", "Last", email = "you@example.com", role = c("aut", "cre"))
+Description: 
+    Helper functions for fitting intercept-only multilevel models across multiple outcome variables,
+    computing intraclass correlations and design effects, and producing basic diagnostic plots.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+Imports:
+    ggplot2,
+    lme4,
+    moments,
+    stats
+RoxygenNote: 7.3.2
