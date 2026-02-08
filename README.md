@@ -1,2 +1,23 @@
 # checkMLM
-Fits empty multilevel models and produce diagnostic plots with ICC and design effect labels.
+Lightweight utilities for **diagnostic multilevel modeling** in R.
+
+The main entry point, `checkMLM()`, fits empty multilevel models (random intercept only) for multiple outcome variables, computes **ICC** and **design effects**, and produces basic diagnostic plots (histograms or bar charts) annotated with these quantities.
+
+This is intended for **exploratory / screening use**, not full model specification.
+
+
+
+## Data expectations
+
+- `uDataframe` must be a data.frame
+- `groupVar` must be the name of a grouping variable (factor or coercible to factor)
+- All other columns are treated as outcomes
+- Missing values are allowed
+- Variables with fewer than 100 usable cases or fewer than two groups are skipped
+- Categorical variables are defined as having ≤ `maxCat` unique values
+
+## Dependencies
+
+- ggplot2  
+- lme4  
+- moments  
