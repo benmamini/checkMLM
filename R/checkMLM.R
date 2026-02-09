@@ -1,4 +1,4 @@
-checkMLM <- function(uDataframe, groupVar, maxCat){
+
 mlmDiagnostics <- function(uDataframe, groupVar, maxCat){
 
 dataFrame <- uDataframe
