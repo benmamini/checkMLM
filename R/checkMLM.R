@@ -256,15 +256,28 @@ ok
 
 
 makeFactor <- function(x) {
-if (is.numeric(x)) factor(x)
-else if (inherits(x, "haven_labelled")) factor(as.numeric(x))
-else x
+
+  # haven_labelled -> drop labels, then factor
+  if (inherits(x, "haven_labelled")) {
+    x <- haven::zap_labels(x)
+  }
+
+  factor(x)
 }
 
-makeNumer <- function(x){
 
-if (is.factor(x)) as.numeric(as.character(x))
-else if (inherits(x, "haven_labelled")) as.numeric(x)
-else as.numeric(x)
+makeNumer <- function(x) {
 
+  # haven_labelled -> drop labels (keeps underlying values)
+  if (inherits(x, "haven_labelled")) {
+    x <- haven::zap_labels(x)
+  }
+
+  # factor -> convert levels to their text, then numeric
+  if (is.factor(x)) {
+    x <- as.character(x)
+  }
+
+  as.numeric(x)
 }
+
