@@ -260,11 +260,14 @@ makeFactor <- function(x) {
   else x
 }
 
-makeNumer <- function(x){
+makeNumer <- function(x) {
   
-  if (is.factor(x)) as.numeric(as.character(x))
-  else if (inherits(x, "haven_labelled")) as.numeric(x)
-  else as.numeric(x)
+  if (is.factor(x)) {
+    x <- as.character(x)
+  }
   
+  if (inherits(x, "haven_labelled")) {
+    x <- haven::zap_labels(x)
+  }
 }
 
