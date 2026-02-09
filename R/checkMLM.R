@@ -267,5 +267,5 @@ makeNumer <- function(x){
   else as.numeric(x)
 
 }
-}
+
 
