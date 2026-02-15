@@ -36,8 +36,7 @@ deseff <- designEfffit(fit, df, groupVar)
 label <- mlmLabel(icc, deseff)
 propdf <- makedfProp(var, isCat)
 makeVarplot(isCat, propdf, var, varName, label)
-# call your prewritten helpers here, using var/ok/varName/group
-# return a single ggplot object
+
 })
 
 
@@ -148,13 +147,13 @@ stop("fit must be lme4 model")
 
 
 vc <- as.data.frame(lme4::VarCorr(fit))
-sigmaU2 <- vc$vcov[vc$grp != "Residual" & vc$var1 == "(Intercept)"]  # between - takes group name as parameter
+sigmaU2 <- vc$vcov[vc$grp != "Residual" & vc$var1 == "(Intercept)"]  
 
 
 
 
 if (inherits(fit, "lmerMod")) {
-sigmaE2 <- vc$vcov[vc$grp == "Residual"]                # WITHIN
+sigmaE2 <- vc$vcov[vc$grp == "Residual"]              
 } else {
 link <- stats::family(fit)$link
 sigmaE2 <- switch(
@@ -209,7 +208,7 @@ stop("`group` is not a column in `data`.")
 }
 
 if (!is.factor(data[[group]])) {
-stop("`data[[group]]` must be a factor.") # we will convert to factor in the main function 
+stop("`data[[group]]` must be a factor.") 
 }
 
 full_formula <- as.formula(
