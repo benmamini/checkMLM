@@ -40,7 +40,9 @@ maxCat = 5
 ```
 print(results$ICC_Table)
 ```
+
 ##Project Structure
+
 
 ```
 |   .gitignore
