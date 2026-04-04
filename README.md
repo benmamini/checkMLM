@@ -35,12 +35,12 @@ multiLvl = TRUE,
 maxCat = 5 
 )
 ```
-# The function returns a list containing your plots and tables
+## The function returns a list containing your plots and tables
 
 ```
 print(results$ICC_Table)
 ```
-#Project Structure
+##Project Structure
 
 ```
 |   .gitignore
