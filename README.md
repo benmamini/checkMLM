@@ -1,7 +1,7 @@
 # checkMLM
 Lightweight utilities for **diagnostic multilevel modeling** in R.
 
-The main entry point, `checkMLM()`, fits empty multilevel models (random intercept only) for multiple outcome variables, computes **ICC** and **design effects**, and produces basic diagnostic plots (histograms or bar charts) annotated with these quantities. Outputs pairwise correlation table and ICC/Design Effect table.
+The main entry point, `mlmDiagnostics`, fits empty multilevel models (random intercept only) for multiple outcome variables, computes **ICC** and **design effects**, and produces basic diagnostic plots (histograms or bar charts) annotated with these quantities. Outputs pairwise correlation table and ICC/Design Effect table.
 
 This is intended for **exploratory / screening use**, not full model specification.
 
@@ -27,10 +27,13 @@ This is intended for **exploratory / screening use**, not full model specificati
 library(checkMLM)
 
 # Run the diagnostic pipeline on your nested data
-results <- checkMLM(
-  Dataframe = data, 
-  groupVar = "school_id", 
-  maxCat = 5 
+results <- mlmDiagnostics(
+Dataframe = data, 
+maxCat = 5,
+displayVar = "school_id",
+groupVar = "school_id", 
+multiLvl = TRUE,
+maxCat = 5 
 )
 
 # The function returns a list containing your plots and tables
