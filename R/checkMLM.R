@@ -8,7 +8,7 @@
 #' @param displayVar Character. The name of the grouping variable to be used for plot labels. Defaults to NULL.
 #' @param groupVars Character vector. The names of the grouping/clustering variables. Defaults to NULL.
 #' @param multiLvl Logical. If TRUE, calculates multilevel statistics (ICC/DEFF). Defaults to TRUE.
-#' @param minCase Integer. Minimum number of usable cases required for a variable pair to be analyzed. Defaults to 100.
+#' @param minCase Integer. Minimum number of usable cases required for a variable pair ICC to be generated Defaults to 100.
 #'
 #' @return A list of class 'mlm_diag' containing:
 #' \itemize{
@@ -218,7 +218,7 @@ computeDesc <- function(var) {
   x <- var[!is.na(var)]
 
   c(
-  mean     = stats::mean(x),
+  mean     = mean(x),
   sd       = stats::sd(x),
   skewness = moments::skewness(x),
   kurtosis = moments::kurtosis(x),  
