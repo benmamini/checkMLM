@@ -10,7 +10,7 @@
 #' @param multiLvl Logical. If TRUE, calculates multilevel statistics (ICC/DEFF). Defaults to TRUE.
 #' @param minCase Integer. Minimum number of usable cases required for a variable pair ICC to be generated Defaults to 100.
 #'
-#' @return A list of class 'mlm_diag' containing:
+#' @return A list of class 'mlmDiag' containing:
 #' \itemize{
 #'   \item Plots: A list of ggplot2 objects for each outcome variable.
 #'   \item Correlation_Matrix: A data.frame of pairwise correlations.
@@ -81,12 +81,17 @@ mlmDiagnostics <- function(dataFrame, maxCat, displayVar = NULL, groupVars = NUL
  makevarPlot(type = isCat, dfProp = propdf, var = var, varName = varName, iccLabel = label) 
 })
 
-
-  return(list(
+ results <- list(
     Plots = plots,
     Correlation_Matrix = corrMat,
-    ICC_Table = iccTable
-))
+    ICC_Table = iccTable)
+  
+ class(results) <- "mlmDiag"
+  
+  
+ return(results)
+  
+
 }
 
 

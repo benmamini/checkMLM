@@ -39,3 +39,21 @@ maxCat = 5
 # The function returns a list containing your plots and tables
 print(results$ICC_Table)
 
+#Project Structure
+
+|   .gitignore
+|   .Rbuildignore
+|   .Rprofile
+|   DESCRIPTION
+|   LICENSE
+|   NAMESPACE
+|   README.md
+|   renv.lock
+|
++---man
+|       mlmDiagnostics.Rd
+|
++---R
+|       checkMLM.R
+
+
