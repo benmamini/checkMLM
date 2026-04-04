@@ -21,9 +21,8 @@ This is intended for **exploratory / screening use**, not full model specificati
 - lme4  
 - moments  
 
-
+##Usage
 ```R
-#Usage
 library(checkMLM)
 
 # Run the diagnostic pipeline on your nested data
@@ -35,12 +34,15 @@ groupVar = "school_id",
 multiLvl = TRUE,
 maxCat = 5 
 )
-
+```
 # The function returns a list containing your plots and tables
-print(results$ICC_Table)
 
+```
+print(results$ICC_Table)
+```
 #Project Structure
 
+```
 |   .gitignore
 |   .Rbuildignore
 |   .Rprofile
@@ -55,5 +57,6 @@ print(results$ICC_Table)
 |
 +---R
 |       checkMLM.R
-
-
+|
+\
+```
