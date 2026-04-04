@@ -13,7 +13,6 @@ This is intended for **exploratory / screening use**, not full model specificati
 - `groupVar` must be the name of a grouping variable (factor or coercible to factor)
 - All other columns are treated as outcomes
 - Missing values are allowed
-- Variables with fewer than 100 usable cases or fewer than two groups are skipped
 - Categorical variables are defined as having ≤ `maxCat` unique values
 
 ## Dependencies
