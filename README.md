@@ -21,7 +21,7 @@ This is intended for **exploratory / screening use**, not full model specificati
 - lme4  
 - moments  
 
-##Usage
+## Usage
 ```R
 library(checkMLM)
 
@@ -41,7 +41,7 @@ maxCat = 5
 print(results$ICC_Table)
 ```
 
-##Project Structure
+## Project Structure
 
 
 ```
