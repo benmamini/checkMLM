@@ -22,7 +22,7 @@
 #' # mlmDiagnostics(my_data, maxCat = 5, groupVars = "school_id")
 
 
-mlmDiagnostics <- function(dataFrame, maxCat, displayVar = NULL, groupVars = NULL, multiLvl = TRUE, minCase = 100){ # if display var is null just don't put anything on the graph
+mlmDiagnostics <- function(dataFrame, maxCat, displayVar = NULL, groupVars = NULL, multiLvl = TRUE, minCase = 100, crossed = FALSE){ # if display var is null just don't put anything on the graph
   
   missingVars <- unique(c(
       setdiff(groupVars, names(dataFrame)),
@@ -58,9 +58,11 @@ mlmDiagnostics <- function(dataFrame, maxCat, displayVar = NULL, groupVars = NUL
   
     varPairs<- expand.grid(groupVar = groupVars, outVar = outcomeVars, stringsAsFactors = FALSE)
   
-    iccTable <- buildiccTable(df = dataFrame, pairs = varPairs, minCase = minCase)
+    iccTable <- buildiccTable(df = dataFrame, pairs = varPairs, minCase = minCase, crossed = crossed, groupVars = groupVars, outcomeVars = outcomeVars)
   
   }
+  
+  
 
   plots <- lapply(outcomeVars, function(varName) {  
   
@@ -70,30 +72,29 @@ mlmDiagnostics <- function(dataFrame, maxCat, displayVar = NULL, groupVars = NUL
   
     if(multiLvl == TRUE){
     
-    label <- mlmLabel(iccTable = iccTable, displayVar = displayVar, varName = varName) 
+      label <- mlmLabel(iccTable = iccTable, displayVar = displayVar, varName = varName) 
     
-  }
+    }
  
- isCat <- checkCat(var = var, maxCat = maxCat)
+    isCat <- checkCat(var = var, maxCat = maxCat)
  
- propdf <- makedfProp(var = var, isCat = isCat)  
+    propdf <- makedfProp(var = var, isCat = isCat)  
  
- makevarPlot(type = isCat, dfProp = propdf, var = var, varName = varName, iccLabel = label) 
-})
+    makevarPlot(type = isCat, dfProp = propdf, var = var, varName = varName, iccLabel = label) 
+  })
 
- results <- list(
+  results <- list(
     Plots = plots,
     Correlation_Matrix = corrMat,
     ICC_Table = iccTable)
   
- class(results) <- "mlmDiag"
+  class(results) <- "mlmDiag"
   
   
  return(results)
   
 
 }
-
 
 
 buildcorrMat <- function(df, vars, maxCat){
@@ -116,7 +117,21 @@ buildcorrMat <- function(df, vars, maxCat){
 }
 
 
-buildiccTable <- function(df, pairs, minCase){
+buildiccTable <- function(df, pairs, minCase, crossed, groupVars, outcomeVars){
+  
+  if(crossed == FALSE){
+    
+    iccDf <- iccTable(df = df, minCase = minCase, pairs = pairs)
+    
+    return(iccDf)
+  }
+ 
+  iccDf <- crossediccTable(df = df, groupVars = groupVars, outcomeVars = outcomeVars, minCase = minCase)
+  
+}
+
+
+iccTable <- function(df, pairs, minCase){
   
   iccList <- Map(function(outVar, groupVar, df, minCase){
     
@@ -133,8 +148,8 @@ buildiccTable <- function(df, pairs, minCase){
     
     modelBinary  <- isBinary(var = suboutCol) 
     fit <- fitMLM(outcome = outVar, data = subDf, group = groupVar, isBinary = modelBinary)
-    icc <- iccFit(fit = fit)
-    deseff <- designEfffit(fit = fit, data = subDf,group = groupVar)
+    icc <- iccFit(fit = fit, groupVar = groupVar)
+    deseff <- designEfffit(fit = fit, data = subDf, group = groupVar)
     
     return(data.frame(
       Outcome = outVar,
@@ -152,8 +167,62 @@ buildiccTable <- function(df, pairs, minCase){
 }
 
 
+crossediccTable <- function(df, groupVars, outcomeVars, minCase){ #code may assume one outcome variable at a time
+  
+  iccList <- lapply(outcomeVars, function(outVar){
+   
+    allCols <- c(groupVars, outVar)
+   
+    okCases <- stats::complete.cases(df[allCols])
+   
+    nUsable <- sum(okCases)
+   
+    if (nUsable < minCase){
+      stop(paste0("Outcome '", outVar, "' has only ", nUsable, 
+                 " usable cases across all groups. Minimum required: ", minCase))
+    }
+   
+    subDf <- df[okCases, ]
+    
+    modelBinary <- isBinary(subDf[[outVar]])
+    
+    fit <- fitMLM(outcome = outVar, data = subDf, group = groupVars, isBinary = modelBinary)
+    
+    outRows <- lapply(groupVars, function(g){
+      
+      if(length(unique(subDf[[g]])) < 2 ){
+        
+        stop(paste0("Group '", g, "' has fewer than 2 levels for outcome '", 
+                    outVar, "'. Crossed ICC cannot be calculated."))
+      }
+      icc <- iccFit(fit, g)    
+      
+      deseff <- designEfffit(fit, subDf, g)
+      
+      return(data.frame(
+        Outcome = outVar,
+        Group = g,
+        ICC = icc,
+        Design_Effect = deseff,
+        stringsAsFactors = FALSE))
+        
+    
+       
+    }) 
+    
+    return(do.call(rbind, outRows))
+  
+    }) 
+    
+
+  return(do.call(rbind, iccList))
+ } 
+   
+
 isBinary <- function(var) {
+  
   length(unique(var[!is.na(var)])) == 2
+  
 }
 
 
@@ -217,7 +286,6 @@ makevarPlot <- function(type, dfProp, var, varName, iccLabel = NULL) {
 }
 
 
-
 computeDesc <- function(var) {
 
   x <- var[!is.na(var)]
@@ -256,22 +324,30 @@ makedfProp <- function(var, isCat) {
 }
 
 
-extractVarcom <- function(fit) {
+extractVarcom <- function(fit, groupVar) { #need to pass groupVar into this
   
-  if (!inherits(fit, c("lmerMod", "glmerMod")))
-    
+  if (!inherits(fit, c("lmerMod", "glmerMod"))){
     stop("fit must be lme4 model")
+  }
   
     vc <- as.data.frame(lme4::VarCorr(fit))
     
-    sigmaU2 <- vc$vcov[vc$grp != "Residual" & vc$var1 == "(Intercept)"]  
+    sigmaU2 <- vc$vcov[vc$grp == groupVar & vc$var1 == "(Intercept)"]  
 
-
+  
+  if(length(sigmaU2) == 0){
+    stop("groupVar ", groupVar, " not found in model random effects")
+    
+  }
+  
+  otherrandVar <- sum(vc$vcov[vc$grp != groupVar & vc$grp != "Residual"])
+  
+    
   if (inherits(fit, "lmerMod")) {
-    sigmaE2 <- vc$vcov[vc$grp == "Residual"]              
+    resVar <- vc$vcov[vc$grp == "Residual"]              
   } else {
     link <- stats::family(fit)$link
-    sigmaE2 <- switch(
+    resVar <- switch(
     link,
     logit   = (pi^2) / 3,
     probit  = 1,
@@ -279,7 +355,8 @@ extractVarcom <- function(fit) {
     stop("Unsupported link for latent ICC: ", link)
 )
 }
-
+  
+  sigmaE2 <- otherrandVar + resVar 
   list(sigmaU2 = sigmaU2, sigmaE2 = sigmaE2)
 }
 
@@ -307,14 +384,14 @@ mlmLabel <- function(iccTable, displayVar, varName){
 }
 
 
-iccFit <- function(fit) {
-  comp <- extractVarcom(fit = fit)
+iccFit <- function(fit, groupVar) {
+  comp <- extractVarcom(fit = fit, groupVar = groupVar)
   comp$sigmaU2 / (comp$sigmaU2 + comp$sigmaE2)
 }
 
 
 designEfffit <- function(fit, data, group) {
-  icc <- iccFit(fit = fit)
+  icc <- iccFit(fit = fit, groupVar = group)
   mbar <- mean(as.numeric(table(data[[group]])))
   1 + (mbar - 1) * icc
 }
@@ -322,37 +399,30 @@ designEfffit <- function(fit, data, group) {
 
 fitMLM <- function(outcome, data, group, isBinary,  link = "logit", REML = FALSE) {
   
-  if (!is.character(group) || length(group) != 1L) { 
+  if (!is.character(group) || length(group) < 1L) { 
     
-    stop("`group` must be a single column name (character scalar).")
+    stop("`group` must be a chracter vector containing at least one column name.")
   }
   
-  if (!group %in% names(data)) {
-    
-    stop("`group` is not a column in `data`.")
-    
+  if (!all(sapply(data[group], is.factor))) {
+    nonFactors <- group[!sapply(data[group], is.factor)]
+    stop(paste0("The following columns must be factors: ", 
+                paste(nonFactors, collapse = ", ")))
   }
-
-  if (!is.factor(data[[group]])) {
+  random_effects <- paste0("(1 | `", group, "`)", collapse = " + ")
+  
+  formString <- paste0("`", outcome, "` ~ 1 + ", random_effects)
     
-    stop("`data[[group]]` must be a factor.") 
-    
-  }
-
-  full_formula <- stats::as.formula(
-    
-  paste0("`", outcome, "` ~ 1 + (1 | `", group, "`)")
-
-  )
+  fullFormula <- stats::as.formula(formString)
 
   if (isTRUE(isBinary)) {
     
     data[[outcome]] <- factor(data[[outcome]])
     
-    return(lme4::glmer(formula = full_formula, data = data, family = stats::binomial(link = link)))
+    return(lme4::glmer(formula = fullFormula, data = data, family = stats::binomial(link = link)))
   }
 
-  return(lme4::lmer(formula = full_formula, data = data, REML = REML))
+  return(lme4::lmer(formula = fullFormula, data = data, REML = REML))
 }
 
 
