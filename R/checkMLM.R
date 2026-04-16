@@ -9,7 +9,7 @@
 #' @param groupVars Character vector. The names of the grouping/clustering variables. Defaults to NULL.
 #' @param multiLvl Logical. If TRUE, calculates multilevel statistics (ICC/DEFF). Defaults to TRUE.
 #' @param minCase Integer. Minimum number of usable cases required for a variable pair ICC to be generated Defaults to 100.
-#'
+#' @param crossed Logical. If TRUE, ICC and design effects will be calculated from a model with all grouping variables included. if False, uses a separate model for each grouping variable. Defaults to FALSE.
 #' @return A list of class 'mlmDiag' containing:
 #' \itemize{
 #'   \item Plots: A list of ggplot2 objects for each outcome variable.
@@ -22,7 +22,7 @@
 #' # mlmDiagnostics(my_data, maxCat = 5, groupVars = "school_id")
 
 
-mlmDiagnostics <- function(dataFrame, maxCat, displayVar = NULL, groupVars = NULL, multiLvl = TRUE, minCase = 100, crossed = FALSE){ # if display var is null just don't put anything on the graph
+mlmDiagnostics <- function(dataFrame, maxCat, displayVar = NULL, groupVars = NULL, multiLvl = TRUE, minCase = 100, crossed = FALSE){ 
   
   missingVars <- unique(c(
       setdiff(groupVars, names(dataFrame)),
