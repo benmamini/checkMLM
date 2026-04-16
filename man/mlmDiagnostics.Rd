@@ -10,7 +10,8 @@ mlmDiagnostics(
   displayVar = NULL,
   groupVars = NULL,
   multiLvl = TRUE,
-  minCase = 100
+  minCase = 100,
+  crossed = FALSE
 )
 }
 \arguments{
@@ -25,6 +26,8 @@ mlmDiagnostics(
 \item{multiLvl}{Logical. If TRUE, calculates multilevel statistics (ICC/DEFF). Defaults to TRUE.}
 
 \item{minCase}{Integer. Minimum number of usable cases required for a variable pair ICC to be generated Defaults to 100.}
+
+\item{crossed}{Logical. If TRUE, ICC and design effects will be calculated from a model with all grouping variables included. if False, uses a separate model for each grouping variable. Defaults to FALSE.}
 }
 \value{
 A list of class 'mlmDiag' containing:
