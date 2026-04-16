@@ -32,7 +32,8 @@ maxCat = 5,
 displayVar = "school_id",
 groupVar = "school_id", 
 multiLvl = TRUE,
-maxCat = 5 
+maxCat = 5,
+crossed = FALSE 
 )
 ```
 ## The function returns a list containing your plots and tables
