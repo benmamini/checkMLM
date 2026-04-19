@@ -22,7 +22,7 @@
 #' # mlmDiagnostics(my_data, maxCat = 5, groupVars = "school_id")
 
 
-mlmDiagnostics <- function(dataFrame, maxCat, displayVar = NULL, groupVars = NULL, multiLvl = TRUE, minCase = 100, crossed = FALSE){ 
+mlmDiagnostics <- function(dataFrame, maxCat, displayVar = NULL, groupVars = NULL, multiLvl = TRUE, minCase = 100, crossed = FALSE, slopes = FALSE, depVars = NULL){ 
   
   missingVars <- unique(c(
       setdiff(groupVars, names(dataFrame)),
@@ -52,6 +52,23 @@ mlmDiagnostics <- function(dataFrame, maxCat, displayVar = NULL, groupVars = NUL
 
   corrMat <- buildcorrMat(df = dataFrame, vars = outcomeVars, maxCat = maxCat)
 
+  slopeTable <- NULL
+  
+  if(slopes == TRUE){
+    
+    focalPred <- setdiff(outcomeVars, depVars)
+    
+    varTrios <- expand.grid(
+      groupVar = groupVars, 
+      depVar = depVars, 
+      focalPred = focalPred, 
+      stringsAsFactors = FALSE
+    )
+    
+    slopeTable <- buildsTable(df = dataFrame, trios = varTrios, minCase = minCase)
+    
+  }
+  
   iccTable <- NULL 
 
   if(multiLvl == TRUE){
@@ -90,7 +107,8 @@ mlmDiagnostics <- function(dataFrame, maxCat, displayVar = NULL, groupVars = NUL
   results <- list(
     Plots = iccPlots,
     Correlation_Matrix = corrMat,
-    ICC_Table = iccTable)
+    ICC_Table = iccTable,
+    Slope_Table = slopeTable)
   
   class(results) <- "mlmDiag"
   
@@ -118,6 +136,63 @@ buildcorrMat <- function(df, vars, maxCat){
   corDf <- do.call(rbind, corList)
   return(corDf)
   
+}
+
+
+buildsTable <- function(df, trios, minCase) {
+  
+  pValues <- Map(function(depVar, focalPred, groupVar, minCase, df) {
+    
+    cols <- c(depVar, focalPred, groupVar)
+    
+    subDf <- checkMod(df = df, allCols = cols, groupVars = groupVar, 
+                      minCase = minCase, outVar = depVar)
+    
+    modelBinary <- isBinary(var = subDf[[depVar]])
+    
+    models <- fitModels(outcome = depVar, predictor = focalPred, 
+                        group = groupVar, data = subDf, isBinary = modelBinary)
+    
+    sigVal <- lrt(m1 = models$m1, m2 = models$m2)
+    
+    return(sigVal)
+    
+  }, 
+  depVar = trios$depVar, focalPred = trios$focalPred, groupVar = trios$groupVar, MoreArgs = list(minCase = minCase, df = df))
+  
+  trios$pVal <- unlist(pValues)
+  
+  return(trios)
+}
+
+fitModels <- function(outcome, predictor, group, data, isBinary, REML = FALSE) {
+  
+  form1 <- stats::as.formula(paste0("`", outcome, "` ~ `", predictor, "` + (1 | `", group, "`)"))
+  
+  form2 <- stats::as.formula(paste0("`", outcome, "` ~ `", predictor, "` + (1 + `", predictor, "` | `", group, "`)"))
+  
+  if (isTRUE(isBinary)) {
+    data[[outcome]] <- factor(data[[outcome]])
+    m1 <- lme4::glmer(formula = form1, data = data, family = stats::binomial(link = "logit"))
+    m2 <- lme4::glmer(formula = form2, data = data, family = stats::binomial(link = "logit"))
+  } else {
+    m1 <- lme4::lmer(formula = form1, data = data, REML = REML)
+    m2 <- lme4::lmer(formula = form2, data = data, REML = REML)
+  }
+  
+  return(list(m1 = m1, m2 = m2))
+}
+
+lrt <- function(m1, m2) {
+  
+  lrtResults <- stats::anova(m1, m2)
+  
+  if (is.null(lrtResults)) {
+    return(NA)
+  }
+  pVal <- lrtResults[["Pr(>Chisq)"]][2]
+  
+  return(pVal)
 }
 
 
