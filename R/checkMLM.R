@@ -10,11 +10,15 @@
 #' @param multiLvl Logical. If TRUE, calculates multilevel statistics (ICC/DEFF). Defaults to TRUE.
 #' @param minCase Integer. Minimum number of usable cases required for a variable pair ICC to be generated Defaults to 100.
 #' @param crossed Logical. If TRUE, ICC and design effects will be calculated from a model with all grouping variables included. if False, uses a separate model for each grouping variable. Defaults to FALSE.
+#' @param slopes Logical. If TRUE, likelihood ratio test will be conducted for slopes predicting depVars. Spaghetti plots will be generated. Defaults to FALSE.
+#' @param depVars Character vector. The names of dependent variables used to build and evaluate random slope models.   
 #' @return A list of class 'mlmDiag' containing:
 #' \itemize{
 #'   \item Plots: A list of ggplot2 objects for each outcome variable.
 #'   \item Correlation_Matrix: A data.frame of pairwise correlations.
 #'   \item ICC_Table: A data.frame of ICC and Design Effect values (if multiLvl is TRUE).
+#'   \item Slope_table: A data.frame of p-values generated from likelihood ratio test.
+#'   \item Slope_Plots: A list of ggplot2 spaghetti plots (OLS) annotated with likelihood ratio test p-value.
 #' }
 #' @export
 #'
