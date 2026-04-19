@@ -56,15 +56,17 @@ mlmDiagnostics <- function(dataFrame, maxCat, displayVar = NULL, groupVars = NUL
 
   if(multiLvl == TRUE){
   
-    varPairs<- expand.grid(groupVar = groupVars, outVar = outcomeVars, stringsAsFactors = FALSE)
+    varPairs<- expand.grid(
+      groupVar = groupVars, 
+      outVar = outcomeVars, 
+      stringsAsFactors = FALSE)
   
     iccTable <- buildiccTable(df = dataFrame, pairs = varPairs, minCase = minCase, crossed = crossed, groupVars = groupVars, outcomeVars = outcomeVars)
   
   }
   
-  
 
-  plots <- lapply(outcomeVars, function(varName) {  
+  iccPlots <- lapply(outcomeVars, function(varName) {  
   
     var <- dataFrame[[varName]]
   
@@ -82,9 +84,11 @@ mlmDiagnostics <- function(dataFrame, maxCat, displayVar = NULL, groupVars = NUL
  
     makevarPlot(type = isCat, dfProp = propdf, var = var, varName = varName, iccLabel = label) 
   })
+  
+  
 
   results <- list(
-    Plots = plots,
+    Plots = iccPlots,
     Correlation_Matrix = corrMat,
     ICC_Table = iccTable)
   
@@ -138,10 +142,7 @@ iccTable <- function(df, pairs, minCase){
     outCol <- df[[outVar]]
     groupCol <- df[[groupVar]]
     
-    ok  <- checkUsablevar(column = outCol, group = groupCol, varName = outVar, groupName = groupVar, minCase = minCase) 
-    if (is.null(ok)) return(NULL)
-    
-    subDf <- df[ok, , drop = FALSE]
+    subDf  <- checkMod(df = df, allCols = c(outVar, groupVar), groupVars = groupVar, minCase = minCase, outVar = outVar) 
     
     suboutCol <- subDf[[outVar]]
     subgroupCol <- subDf[[groupVar]]
@@ -167,22 +168,13 @@ iccTable <- function(df, pairs, minCase){
 }
 
 
-crossediccTable <- function(df, groupVars, outcomeVars, minCase){ #code may assume one outcome variable at a time
+crossediccTable <- function(df, groupVars, outcomeVars, minCase){ 
   
   iccList <- lapply(outcomeVars, function(outVar){
    
     allCols <- c(groupVars, outVar)
    
-    okCases <- stats::complete.cases(df[allCols])
-   
-    nUsable <- sum(okCases)
-   
-    if (nUsable < minCase){
-      stop(paste0("Outcome '", outVar, "' has only ", nUsable, 
-                 " usable cases across all groups. Minimum required: ", minCase))
-    }
-   
-    subDf <- df[okCases, ]
+    subDf <- checkMod(df = df, allCols = allCols, groupVars = groupVars, minCase = minCase, outVar = outVar)
     
     modelBinary <- isBinary(subDf[[outVar]])
     
@@ -190,11 +182,6 @@ crossediccTable <- function(df, groupVars, outcomeVars, minCase){ #code may assu
     
     outRows <- lapply(groupVars, function(g){
       
-      if(length(unique(subDf[[g]])) < 2 ){
-        
-        stop(paste0("Group '", g, "' has fewer than 2 levels for outcome '", 
-                    outVar, "'. Crossed ICC cannot be calculated."))
-      }
       icc <- iccFit(fit, g)    
       
       deseff <- designEfffit(fit, subDf, g)
@@ -435,32 +422,30 @@ checkCat <- function(var, maxCat){
 
 
 
-checkUsablevar <- function(column, group, varName, groupName, minCase) {
+checkMod <- function(df, allCols, groupVars, minCase, outVar){
   
-  ok <- !is.na(column) & !is.na(group)
+  okCases <- stats::complete.cases(df[allCols])
   
-  if (sum(ok) < minCase) {
-    
-    warning(
-      "Skipping pair: ", varName, groupName,
-      ": too few usable cases (n = ", sum(ok), ")"
-    )
-    
-    return(NULL)
-    
+  nUsable <- sum(okCases)
+  
+  if (nUsable < minCase){
+    stop(paste0("Outcome '", outVar, "' has only ", nUsable, 
+                " usable cases across all groups. Minimum required: ", minCase))
   }
   
-  if (length(unique(group[ok])) < 2) {
-    
-    warning(
-      "Skipping pair: ", varName, groupName,
-      ": < 2 groups with data"
-    )
-    
-    return(NULL)
-  }
+  subDf <- df[okCases, ]
   
-  ok
+  outRows <- lapply(groupVars, function(g){
+    if(length(unique(subDf[[g]])) < 2 ){
+      
+      stop(paste0("Group '", g, "' has fewer than 2 levels for outcome '", 
+                  outVar, "'. Crossed ICC cannot be calculated."))
+    }
+  })
+  
+  return(subDf)
+  
+  
 }
 
 
