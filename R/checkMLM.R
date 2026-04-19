@@ -144,6 +144,8 @@ iccTable <- function(df, pairs, minCase){
     
     subDf  <- checkMod(df = df, allCols = c(outVar, groupVar), groupVars = groupVar, minCase = minCase, outVar = outVar) 
     
+    if (is.null(subDf)) return(NULL)
+    
     suboutCol <- subDf[[outVar]]
     subgroupCol <- subDf[[groupVar]]
     
@@ -175,6 +177,8 @@ crossediccTable <- function(df, groupVars, outcomeVars, minCase){
     allCols <- c(groupVars, outVar)
    
     subDf <- checkMod(df = df, allCols = allCols, groupVars = groupVars, minCase = minCase, outVar = outVar)
+    
+    if (is.null(subDf)) return(NULL)
     
     modelBinary <- isBinary(subDf[[outVar]])
     
@@ -421,7 +425,6 @@ checkCat <- function(var, maxCat){
 }
 
 
-
 checkMod <- function(df, allCols, groupVars, minCase, outVar){
   
   okCases <- stats::complete.cases(df[allCols])
@@ -429,25 +432,25 @@ checkMod <- function(df, allCols, groupVars, minCase, outVar){
   nUsable <- sum(okCases)
   
   if (nUsable < minCase){
-    stop(paste0("Outcome '", outVar, "' has only ", nUsable, 
-                " usable cases across all groups. Minimum required: ", minCase))
+    
+    warning(paste0("Outcome '", outVar, "' skipped: only ", nUsable, 
+                   " usable cases. Minimum required: ", minCase))
+    return(NULL)
   }
   
-  subDf <- df[okCases, ]
+  subDf <- df[okCases, , drop = FALSE]
   
-  outRows <- lapply(groupVars, function(g){
+  for(g in groupVars){
+    
     if(length(unique(subDf[[g]])) < 2 ){
       
-      stop(paste0("Group '", g, "' has fewer than 2 levels for outcome '", 
-                  outVar, "'. Crossed ICC cannot be calculated."))
+      warning(paste0("Group '", g, "' skipped: fewer than 2 levels for outcome '", outVar, "'."))
+      return(NULL)
+      
     }
-  })
-  
+  }
   return(subDf)
-  
-  
 }
-
 
 makeFactor <- function(x) {
 
