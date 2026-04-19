@@ -52,7 +52,10 @@ mlmDiagnostics <- function(dataFrame, maxCat, displayVar = NULL, groupVars = NUL
 
   corrMat <- buildcorrMat(df = dataFrame, vars = outcomeVars, maxCat = maxCat)
 
+  iccTable <- NULL 
   slopeTable <- NULL
+  slopePlots <- NULL
+  
   
   if(slopes == TRUE){
     
@@ -67,9 +70,24 @@ mlmDiagnostics <- function(dataFrame, maxCat, displayVar = NULL, groupVars = NUL
     
     slopeTable <- buildsTable(df = dataFrame, trios = varTrios, minCase = minCase)
     
+    plotsList <- lapply(1:nrow(slopeTable), function(i) {
+      row <- slopeTable[i, ]
+      
+      if(is.na(row$pVal)) return(NULL)
+      
+      makeSpaghettiPlot(df = dataFrame, 
+                        outcome = row$depVar, 
+                        predictor = row$focalPred, 
+                        group = row$groupVar, 
+                        pVal = row$pVal)
+    })
+    
+    slopePlots <- Filter(Negate(is.null), plotsList)
+    
+    
+    
   }
   
-  iccTable <- NULL 
 
   if(multiLvl == TRUE){
   
@@ -101,22 +119,61 @@ mlmDiagnostics <- function(dataFrame, maxCat, displayVar = NULL, groupVars = NUL
  
     makevarPlot(type = isCat, dfProp = propdf, var = var, varName = varName, iccLabel = label) 
   })
-  
-  
 
   results <- list(
     Plots = iccPlots,
     Correlation_Matrix = corrMat,
     ICC_Table = iccTable,
-    Slope_Table = slopeTable)
+    Slope_Table = slopeTable,
+    Slope_Plots = slopePlots)
   
   class(results) <- "mlmDiag"
   
   
  return(results)
   
-
 }
+
+
+makeSpaghettiPlot <- function(df, outcome, predictor, group, pVal) {
+  
+  plotDf <- df[stats::complete.cases(df[c(outcome, predictor, group)]), ]
+  
+  pText <- ifelse(pVal < 0.001, "< 0.001", sprintf("%.3f", pVal))
+  subtitleText <- paste0("Group: ", group, " | LRT p: ", pText)
+  
+  isBin <- length(unique(plotDf[[outcome]])) == 2
+  
+  p <- ggplot2::ggplot(plotDf, ggplot2::aes(x = .data[[predictor]], y = .data[[outcome]]))
+  
+  if (isBin) {
+    p <- p + 
+      ggplot2::geom_smooth(ggplot2::aes(group = .data[[group]]), 
+                           method = "glm", method.args = list(family = "binomial"), 
+                           se = FALSE, color = "gray50", alpha = 0.4, linewidth = 0.5) +
+      ggplot2::geom_smooth(method = "glm", method.args = list(family = "binomial"), 
+                           se = FALSE, color = "blue", linewidth = 1.2)
+  } else {
+    p <- p + 
+      ggplot2::geom_smooth(ggplot2::aes(group = .data[[group]]), 
+                           method = "lm", 
+                           se = FALSE, color = "gray50", alpha = 0.4, linewidth = 0.5) +
+      ggplot2::geom_smooth(method = "lm", 
+                           se = FALSE, color = "blue", linewidth = 1.2)
+  }
+  
+  p <- p + 
+    ggplot2::labs(
+      title = paste0(outcome, " ~ ", predictor),
+      subtitle = subtitleText,
+      x = predictor,
+      y = if(isBin) paste0("Probability of ", outcome) else outcome
+    ) +
+    ggplot2::theme_minimal()
+  
+  return(p)
+}
+
 
 
 buildcorrMat <- function(df, vars, maxCat){
